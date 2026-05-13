@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSeek AI · 智能对话</title>
+
+  <!-- highlight.js 代码高亮 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+
+  <!-- highlight.js 核心 (v11) -->
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/java.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/sql.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/xml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/css.min.js"></script>
+
+  <!-- 样式 -->
+  <link rel="stylesheet" th:href="@{/css/chat.css}">
+</head>
+<body>
+
+<!-- ============ 侧边栏 ============ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <button class="sidebar-btn" onclick="app.newConversation()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      新建对话
+    </button>
+  </div>
+
+  <div class="sidebar-search">
+    <input class="search-input" type="text" placeholder="搜索对话..." id="searchInput"
+           oninput="app.filterConversations(this.value)">
+  </div>
+
+  <div class="sidebar-body">
+    <div class="conversation-list" id="convList"></div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-btn" onclick="app.exportConversation()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      导出对话
+    </button>
+    <button class="sidebar-btn" onclick="app.toggleTheme()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+      切换主题
+    </button>
+  </div>
+</nav>
+
+<!-- ============ 主区域 ============ -->
+<div class="main">
+  <!-- 顶部栏 -->
+  <header class="header">
+    <div class="header-left">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"
+           style="color:var(--accent)">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      <span>DeepSeek AI</span>
+      <span class="model-badge">deepseek-chat</span>
+    </div>
+
+    <div class="header-actions">
+      <button class="icon-btn" title="设置系统提示词" onclick="app.toggleSystemPanel()">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" title="清空当前对话" onclick="app.clearConversation()">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+        </svg>
+      </button>
+      <button class="icon-btn" title="导出对话" onclick="app.exportConversation()">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+      <button class="icon-btn" title="切换主题" onclick="app.toggleTheme()">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 消息列表 -->
+  <div class="messages-area" id="messagesArea" onscroll="app._handleScroll()">
+    <div class="messages-inner" id="messagesInner">
+      <!-- 欢迎页由 JS 动态渲染 -->
+    </div>
+  </div>
+
+  <!-- 滚动到底部按钮 -->
+  <button class="scroll-to-bottom" id="scrollBtn" onclick="app.scrollToBottom(true)">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </button>
+
+  <!-- 输入区 -->
+  <div class="input-area">
+    <div class="input-inner">
+      <div class="input-box">
+        <div class="input-toolbar">
+          <button class="toolbar-btn" title="清空输入" onclick="app.clearInput()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+          <div class="toolbar-sep"></div>
+          <button class="toolbar-btn" title="插入代码块" onclick="app.insertCodeBlock()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+          </button>
+          <div class="toolbar-sep"></div>
+          <span class="toolbar-hint">Enter 发送 · Shift+Enter 换行</span>
+        </div>
+
+        <div class="input-row">
+          <div class="textarea-wrap">
+            <textarea id="msgInput" placeholder="输入你的问题..." rows="1"></textarea>
+            <div class="char-counter" id="charCounter">0</div>
+          </div>
+          <div class="send-row">
+            <button class="stop-btn hidden" id="stopBtn" onclick="app.stop()" title="停止生成">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+              </svg>
+            </button>
+            <button class="send-btn" id="sendBtn" onclick="app.send()" title="发送 (Enter)">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 系统设置面板 ============ -->
+<div class="system-panel" id="systemPanel">
+  <div class="panel-header">
+    <span class="panel-title">⚙️ 模型设置</span>
+    <button class="icon-btn" onclick="app.toggleSystemPanel()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="panel-body">
+    <div class="panel-label">系统提示词</div>
+    <textarea class="system-textarea" id="systemPromptInput"
+              placeholder="设置 AI 的角色和行为，例如：你是一名资深 Java 后端工程师...">
+你是一名有帮助的 AI 助手，擅长回答技术问题。请用中文回答，表达清晰、专业。如果需要展示代码，请使用 Markdown 代码块格式。</textarea>
+
+    <div class="temp-slider-wrap">
+      <div class="temp-row">
+        <div class="panel-label" style="margin:0">创造性（Temperature）</div>
+        <span id="tempValue" style="font-size:13px;font-weight:600;color:var(--accent)">0.7</span>
+      </div>
+      <input type="range" min="0" max="2" step="0.1" value="0.7" id="tempSlider"
+             oninput="document.getElementById('tempValue').textContent=this.value">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px">
+        <span>保守（0）</span><span>均衡（1）</span><span>创意（2）</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-footer">
+    <button class="btn-secondary" onclick="app.toggleSystemPanel()">取消</button>
+    <button class="btn-primary" onclick="app.applySettings()">应用设置</button>
+  </div>
+</div>
+
+<!-- ============ Toast ============ -->
+<div id="toast">✅ 已复制</div>
+
+  <!-- 应用脚本 -->
+  <script th:src="@{/js/markdown.js?v=7}"></script>
+  <script th:src="@{/js/app.js?v=7}"></script>
+
+  <!-- 覆盖为同步接口，直接返回完整文本 -->
+  <script>
+    window.streamMessage = function(text, callbacks) {
+      // 先调用 onStart 创建 bubble
+      callbacks.onStart();
+
+      fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.response) {
+          callbacks.onChunk(data.response);
+        } else {
+          callbacks.onChunk('❌ 错误: ' + (data.error || '未知错误'));
+        }
+        callbacks.onDone();
+      })
+      .catch(err => {
+        callbacks.onChunk('❌ 请求失败: ' + err.message);
+        callbacks.onDone();
+      });
+    };
+  </script>
+</body>
+</html>
