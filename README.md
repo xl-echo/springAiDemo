@@ -390,7 +390,7 @@ MIT License
 
 ## 👨‍💻 作者
 
-**ZTSK** - Java 全栈工程师 | 中通快递技术团队
+**ZTSK** - Java 全栈工程师
 
 > *「不是 AI 淘汰了 Java 工程师，而是会用 AI 的 Java 工程师淘汰了不会用的。」*
 
